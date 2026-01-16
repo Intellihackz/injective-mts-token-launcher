@@ -328,7 +328,7 @@ function App() {
       <header className="header">
         <div className="logo">
           <img src={logo} alt="Inject logo" className="logo-img" />
-          <span className="logo-text">Inject</span>
+          <span className="logo-text">inject.fun</span>
         </div>
         <span
           className={`wallet-address ${isWalletConnected ? 'connected' : ''} ${isConnecting ? 'connecting' : ''}`}
@@ -390,7 +390,9 @@ function App() {
           <button className="create-token-btn" onClick={handleCreateToken} disabled={isCreatingToken}>
             {isCreatingToken ? 'Creating...' : 'create token'}
           </button>
-          <p>payment of 1 INJ and 1 wINJ is required for token creation</p>
+          <div className="fee-notice">
+            <span className="fee-text">payment of 1 INJ and 1 wINJ is required for token creation</span>
+          </div>
 
           {tokenStatus.message && (
             <div className={`status-message ${tokenStatus.type}`} style={{ marginTop: '16px' }}>

@@ -85,6 +85,30 @@
   padding: 12px 40px;
 }
 
+.fee-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 12px 16px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.fee-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.fee-text {
+  text-align: center;
+  line-height: 1.4;
+}
+
 /* Wrap/Unwrap Card */
 .wrap-card {
   width: 330px;
