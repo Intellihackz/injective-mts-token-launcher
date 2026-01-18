@@ -20,6 +20,7 @@ async function main() {
     console.log("\n📝 To create a token, users must:");
     console.log("  1. Approve factory to spend 1 wINJ");
     console.log("  2. Call createToken() with 1 INJ value");
+    console.log(`\n run npx hardhat verify --network inj_testnet ${factoryAddress}`);
 }
 
 main()

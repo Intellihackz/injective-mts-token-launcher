@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BrowserProvider, formatEther, parseEther, Contract, MaxUint256 } from 'ethers'
-
+import WINJ_ABI from './abis/WINJ.json'
+import TOKEN_FACTORY_ABI from './abis/TOKENFACTORY.json'
 declare global {
   interface Window {
     ethereum?: any
@@ -24,26 +25,9 @@ const INJECTIVE_EVM_PARAMS = {
 // wINJ Contract Address on Injective Testnet
 const WINJ_CONTRACT_ADDRESS = '0x0000000088827d2d103ee2d9A6b781773AE03FfB'
 
-// Token Factory Contract Address (redeployed with correct wINJ)
-const TOKEN_FACTORY_ADDRESS = '0xeF0AAFB18e12296A074Df9EaE10DCEBF22EA060e'
+// Token Factory Contract Address 
+const TOKEN_FACTORY_ADDRESS = '0x5c68BDa376ed8eBcc96a5FA9D721772c16dF5f06'
 
-// wINJ ABI (with deposit for wrapping and withdraw for unwrapping)
-const WINJ_ABI = [
-  'function approve(address spender, uint256 amount) external returns (bool)',
-  'function balanceOf(address account) external view returns (uint256)',
-  'function allowance(address owner, address spender) external view returns (uint256)',
-  'function deposit() external payable',
-  'function withdraw(uint256 amount) external',
-]
-
-// Token Factory ABI
-const TOKEN_FACTORY_ABI = [
-  'function createToken(string name, string symbol, uint8 decimals, uint256 initialSupply) external payable returns (address tokenAddress)',
-  'function CREATION_FEE() external view returns (uint256)',
-  'function BANK_MODULE_FEE() external view returns (uint256)',
-  'function getTokensByCreator(address creator) external view returns (address[])',
-  'function totalTokensCreated() external view returns (uint256)',
-]
 
 function App() {
   const [activeTab, setActiveTab] = useState<'wrap' | 'unwrap'>('wrap')

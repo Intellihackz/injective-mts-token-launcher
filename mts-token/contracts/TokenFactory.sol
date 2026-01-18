@@ -17,10 +17,6 @@ contract TokenFactory {
     uint256 public constant CREATION_FEE = 1 ether; // 1 wINJ (18 decimals)
     uint256 public constant BANK_MODULE_FEE = 1 ether; // 1 INJ for bank module
 
-    // Track all tokens created
-    address[] public allTokens;
-    mapping(address => address[]) public tokensByCreator;
-
     event TokenCreated(
         address indexed tokenAddress,
         address indexed creator,
@@ -76,8 +72,6 @@ contract TokenFactory {
         );
 
         tokenAddress = address(newToken);
-        allTokens.push(tokenAddress);
-        tokensByCreator[msg.sender].push(tokenAddress);
 
         emit TokenCreated(
             tokenAddress,
@@ -133,22 +127,6 @@ contract TokenFactory {
             "TokenFactory: new owner is zero address"
         );
         owner = newOwner;
-    }
-
-    /**
-     * @dev Returns total number of tokens created.
-     */
-    function totalTokensCreated() external view returns (uint256) {
-        return allTokens.length;
-    }
-
-    /**
-     * @dev Returns tokens created by a specific address.
-     */
-    function getTokensByCreator(
-        address creator
-    ) external view returns (address[] memory) {
-        return tokensByCreator[creator];
     }
 
     /**
