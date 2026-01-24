@@ -75,7 +75,7 @@
     },
     {
         "inputs": [],
-        "name": "CREATION_FEE",
+        "name": "PLATFORM_FEE",
         "outputs": [
             {
                 "internalType": "uint256",
@@ -88,12 +88,12 @@
     },
     {
         "inputs": [],
-        "name": "WINJ",
+        "name": "TOTAL_FEE",
         "outputs": [
             {
-                "internalType": "address",
+                "internalType": "uint256",
                 "name": "",
-                "type": "address"
+                "type": "uint256"
             }
         ],
         "stateMutability": "view",

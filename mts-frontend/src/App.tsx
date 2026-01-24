@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { BrowserProvider, formatEther, parseEther, Contract, MaxUint256 } from 'ethers'
-import WINJ_ABI from './abis/WINJ.json'
+import { BrowserProvider, formatEther, Contract } from 'ethers'
 import TOKEN_FACTORY_ABI from './abis/TOKENFACTORY.json'
 declare global {
   interface Window {
@@ -22,26 +21,18 @@ const INJECTIVE_EVM_PARAMS = {
   blockExplorerUrls: ['https://testnet.blockscout.injective.network/blocks'],
 }
 
-// wINJ Contract Address on Injective Testnet
-const WINJ_CONTRACT_ADDRESS = '0x0000000088827d2d103ee2d9A6b781773AE03FfB'
-
-// Token Factory Contract Address 
-const TOKEN_FACTORY_ADDRESS = '0x5c68BDa376ed8eBcc96a5FA9D721772c16dF5f06'
+// Token Factory Contract Address (Updated Deployment)
+const TOKEN_FACTORY_ADDRESS = '0x715513b13Aa8118827167Dc5B51E3d6DE492417E'
 
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'wrap' | 'unwrap'>('wrap')
   const [tokenName, setTokenName] = useState('')
   const [ticker, setTicker] = useState('')
   const [supply, setSupply] = useState('1000000')
   const [decimal, setDecimal] = useState('18')
-  const [amount, setAmount] = useState('')
   const [isWalletConnected, setIsWalletConnected] = useState(false)
   const [walletAddress, setWalletAddress] = useState('')
   const [walletBalance, setWalletBalance] = useState('')
-  const [winjBalance, setWinjBalance] = useState('')
-  const [status, setStatus] = useState<{ type: 'success' | 'error' | 'pending' | ''; message: string }>({ type: '', message: '' })
-  const [isLoading, setIsLoading] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [isCreatingToken, setIsCreatingToken] = useState(false)
   const [tokenStatus, setTokenStatus] = useState<{ type: 'success' | 'error' | 'pending' | ''; message: string }>({ type: '', message: '' })
@@ -63,7 +54,6 @@ function App() {
       setIsWalletConnected(false)
       setWalletAddress('')
       setWalletBalance('')
-      setWinjBalance('')
       console.log('Wallet disconnected')
     } else {
       // Connect wallet using MetaMask with ethers v6
@@ -88,39 +78,6 @@ function App() {
         // Fetch native INJ balance
         const balance = await provider.getBalance(address)
         const formattedBalance = formatEther(balance)
-
-        // Create wINJ contract instance
-        const winjContract = new Contract(WINJ_CONTRACT_ADDRESS, WINJ_ABI, signer)
-
-        // Check allowance and request approval only if needed
-        try {
-          const currentAllowance = await winjContract.allowance(address, TOKEN_FACTORY_ADDRESS)
-          console.log('Current wINJ allowance:', formatEther(currentAllowance))
-
-          // Only request approval if allowance is less than a reasonable threshold
-          if (currentAllowance < BigInt('1000000000000000000000000000000')) { // Less than 1e30
-            console.log('Requesting wINJ approval...')
-            const approveTx = await winjContract.approve(TOKEN_FACTORY_ADDRESS, MaxUint256)
-            console.log('Approval tx sent:', approveTx.hash)
-            await approveTx.wait()
-            console.log('wINJ approval confirmed!')
-          } else {
-            console.log('wINJ already approved, skipping approval request')
-          }
-        } catch (approveErr) {
-          console.error('wINJ approval check/request failed:', approveErr)
-        }
-
-        // Query wINJ balance
-        try {
-          const winjBalanceRaw = await winjContract.balanceOf(address)
-          const formattedWinjBalance = formatEther(winjBalanceRaw)
-          setWinjBalance(formatBalance(formattedWinjBalance))
-          console.log('wINJ Balance:', formattedWinjBalance)
-        } catch (balanceErr) {
-          console.error('Failed to fetch wINJ balance:', balanceErr)
-          setWinjBalance('0.0000')
-        }
 
         setWalletAddress(shortenAddress(address))
         setWalletBalance(formatBalance(formattedBalance))
@@ -171,35 +128,30 @@ function App() {
       const signer = await provider.getSigner()
       const tokenFactory = new Contract(TOKEN_FACTORY_ADDRESS, TOKEN_FACTORY_ABI, signer)
 
-      // Get creation fees
-      // CREATION_FEE (1 wINJ) - pulled via transferFrom (requires prior approval)
-      // BANK_MODULE_FEE (1 INJ) - sent as msg.value for bank module registration
-      const creationFee = await tokenFactory.CREATION_FEE()
-      const bankModuleFee = await tokenFactory.BANK_MODULE_FEE()
-      console.log('Creation fee (wINJ):', formatEther(creationFee), 'Bank module fee (native INJ):', formatEther(bankModuleFee))
+      // Get total creation fee (2 INJ total: 1 INJ platform fee + 1 INJ bank module fee)
+      const totalFee = await tokenFactory.TOTAL_FEE()
+      console.log('Total creation fee (INJ):', formatEther(totalFee))
 
-      setTokenStatus({ type: 'pending', message: `Creating token (${formatEther(creationFee)} wINJ + ${formatEther(bankModuleFee)} INJ)...` })
+      setTokenStatus({ type: 'pending', message: `Creating token (${formatEther(totalFee)} INJ)...` })
 
       // Calculate initial supply with token decimals
       const initialSupply = BigInt(supply) * BigInt(10 ** decimalsNum)
       console.log('Initial supply (with decimals):', initialSupply.toString())
 
-      // Create token - only send BANK_MODULE_FEE as native value
-      // The contract will pull CREATION_FEE in wINJ via transferFrom
-      console.log('Calling createToken with:', { tokenName, ticker, decimalsNum, initialSupply: initialSupply.toString(), nativeValue: bankModuleFee.toString() })
+      // Create token - send 2 INJ as msg.value
+      console.log('Calling createToken with:', { tokenName, ticker, decimalsNum, initialSupply: initialSupply.toString(), nativeValue: totalFee.toString() })
       const tx = await tokenFactory.createToken(
         tokenName,
         ticker,
         decimalsNum,
         initialSupply,
-        { value: bankModuleFee }
+        { value: totalFee }
       )
 
       setTokenStatus({ type: 'pending', message: 'Transaction sent, waiting for confirmation...' })
       const receipt = await tx.wait()
 
       // Get the token address from the transaction receipt
-      // The createToken function returns the address, which is also in the TokenCreated event
       const tokenAddress = receipt.logs[1]?.address || ''
       console.log('Token created! Address:', tokenAddress, 'Receipt:', receipt)
 
@@ -215,6 +167,12 @@ function App() {
       setShowTokenModal(true)
       setTokenStatus({ type: 'success', message: `Token "${tokenName}" (${ticker}) created successfully!` })
 
+      // Refresh wallet balance after token creation
+      const updatedBalance = await provider.getBalance(await signer.getAddress())
+      const formattedBalance = formatEther(updatedBalance)
+      setWalletBalance(formatBalance(formattedBalance))
+      console.log('Updated INJ Balance:', formattedBalance)
+
       // Clear form
       setTokenName('')
       setTicker('')
@@ -226,57 +184,6 @@ function App() {
       setTokenStatus({ type: 'error', message: `Token creation failed: ${err.message || 'Unknown error'}` })
     } finally {
       setIsCreatingToken(false)
-    }
-  }
-
-  const handleWrap = async () => {
-    if (!isWalletConnected) {
-      setStatus({ type: 'error', message: 'Please connect your wallet first!' })
-      return
-    }
-
-    if (!amount || parseFloat(amount) <= 0) {
-      setStatus({ type: 'error', message: 'Please enter a valid amount!' })
-      return
-    }
-
-    try {
-      setIsLoading(true)
-      setStatus({ type: 'pending', message: `${activeTab === 'wrap' ? 'Wrapping' : 'Unwrapping'}...` })
-
-      const provider = new BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const address = await signer.getAddress()
-      const winjContract = new Contract(WINJ_CONTRACT_ADDRESS, WINJ_ABI, signer)
-
-      if (activeTab === 'wrap') {
-        // Wrap INJ to wINJ - call deposit() with INJ value
-        const tx = await winjContract.deposit({
-          value: parseEther(amount)
-        })
-        setStatus({ type: 'pending', message: 'Transaction sent, waiting for confirmation...' })
-        await tx.wait()
-        setStatus({ type: 'success', message: `Successfully wrapped ${amount} INJ to wINJ!` })
-      } else {
-        // Unwrap wINJ to INJ - call withdraw() with amount
-        const tx = await winjContract.withdraw(parseEther(amount))
-        setStatus({ type: 'pending', message: 'Transaction sent, waiting for confirmation...' })
-        await tx.wait()
-        setStatus({ type: 'success', message: `Successfully unwrapped ${amount} wINJ to INJ!` })
-      }
-
-      // Refresh balances after transaction
-      const newBalance = await provider.getBalance(address)
-      const newWinjBalance = await winjContract.balanceOf(address)
-      setWalletBalance(formatBalance(formatEther(newBalance)))
-      setWinjBalance(formatBalance(formatEther(newWinjBalance)))
-      setAmount('') // Clear the input
-
-    } catch (err: any) {
-      console.error('Transaction failed:', err.message || err)
-      setStatus({ type: 'error', message: `Transaction failed: ${err.message || 'Unknown error'}` })
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -323,7 +230,7 @@ function App() {
           {isConnecting
             ? 'Connecting...'
             : (isWalletConnected
-              ? `${walletBalance} INJ | ${winjBalance} wINJ | ${walletAddress}`
+              ? `${walletBalance} INJ | ${walletAddress}`
               : 'Connect Wallet')}
         </span>
       </header>
@@ -375,7 +282,7 @@ function App() {
             {isCreatingToken ? 'Creating...' : 'create token'}
           </button>
           <div className="fee-notice">
-            <span className="fee-text">payment of 1 INJ and 1 wINJ is required for token creation</span>
+            <span className="fee-text">payment of 2 INJ is required for token creation</span>
           </div>
 
           {tokenStatus.message && (
@@ -384,47 +291,6 @@ function App() {
             </div>
           )}
         </section>
-
-        {/* Wrap/Unwrap Card */}
-        <aside className="wrap-card">
-          <div className="tab-container">
-            <button
-              className={`tab ${activeTab === 'wrap' ? 'active' : ''}`}
-              onClick={() => setActiveTab('wrap')}
-            >
-              wrap
-            </button>
-            <button
-              className={`tab ${activeTab === 'unwrap' ? 'active' : ''}`}
-              onClick={() => setActiveTab('unwrap')}
-            >
-              unwrap
-            </button>
-          </div>
-
-          <div className="amount-group">
-            <label className="amount-label">amount</label>
-            <div className="amount-input-wrapper">
-              <input
-                type="text"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder=""
-              />
-              <span className="amount-suffix">{activeTab === 'wrap' ? 'INJ' : 'wINJ'}</span>
-            </div>
-          </div>
-
-          <button className="transfer-btn" onClick={handleWrap} disabled={isLoading}>
-            {isLoading ? 'Processing...' : activeTab}
-          </button>
-
-          {status.message && (
-            <div className={`status-message ${status.type}`}>
-              {status.message}
-            </div>
-          )}
-        </aside>
       </main>
 
       {/* Token Created Modal */}

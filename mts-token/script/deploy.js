@@ -14,13 +14,12 @@ async function main() {
     console.log(`  Contract Address: ${factoryAddress}`);
     console.log(`  Owner (you): ${deployer.address}`);
     console.log("\n📋 Factory Features:");
-    console.log("  - Users pay 1 wINJ fee to create tokens");
-    console.log("  - Users send 1 INJ for bank module registration");
-    console.log("  - Owner can withdraw accumulated wINJ fees");
+    console.log("  - Users pay 2 INJ total to create tokens");
+    console.log("  - 1 INJ platform fee + 1 INJ for bank module registration");
+    console.log("  - Owner can withdraw accumulated INJ platform fees");
     console.log("\n📝 To create a token, users must:");
-    console.log("  1. Approve factory to spend 1 wINJ");
-    console.log("  2. Call createToken() with 1 INJ value");
-    console.log(`\n run npx hardhat verify --network inj_testnet ${factoryAddress}`);
+    console.log("  - Call createToken() with 2 INJ value (msg.value)");
+    console.log(`\n💡 Verify contract: npx hardhat verify --network inj_testnet ${factoryAddress}`);
 }
 
 main()

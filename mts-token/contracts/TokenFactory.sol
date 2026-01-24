@@ -2,20 +2,19 @@
 pragma solidity ^0.8.20;
 
 import {MintableToken} from "./MintableToken.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title TokenFactory
  * @dev Factory contract for creating ERC20 tokens on Injective.
- * Charges 1 wINJ fee per token creation. Owner can withdraw fees.
+ * Charges 2 INJ total fee per token creation (1 INJ platform fee + 1 INJ for bank module).
+ * Owner can withdraw accumulated platform fees.
  */
 contract TokenFactory {
     address public owner;
 
-    // Hardcoded wINJ contract address on Injective testnet
-    address public constant WINJ = 0x0000000088827d2d103ee2d9A6b781773AE03FfB;
-    uint256 public constant CREATION_FEE = 1 ether; // 1 wINJ (18 decimals)
+    uint256 public constant PLATFORM_FEE = 1 ether; // 1 INJ platform fee
     uint256 public constant BANK_MODULE_FEE = 1 ether; // 1 INJ for bank module
+    uint256 public constant TOTAL_FEE = PLATFORM_FEE + BANK_MODULE_FEE; // 2 INJ total
 
     event TokenCreated(
         address indexed tokenAddress,
@@ -37,7 +36,7 @@ contract TokenFactory {
     }
 
     /**
-     * @dev Creates a new token. Requires 1 wINJ fee + 1 INJ for bank module.
+     * @dev Creates a new token. Requires 2 INJ total (1 INJ platform fee + 1 INJ for bank module).
      * @param name Token name
      * @param symbol Token symbol
      * @param decimals Token decimals (typically 18)
@@ -50,20 +49,14 @@ contract TokenFactory {
         uint8 decimals,
         uint256 initialSupply
     ) external payable returns (address tokenAddress) {
-        // Require exactly 1 INJ for bank module registration
+        // Require exactly 2 INJ (1 INJ platform fee + 1 INJ for bank module)
         require(
-            msg.value >= BANK_MODULE_FEE,
-            "TokenFactory: send 1 INJ for bank module"
+            msg.value >= TOTAL_FEE,
+            "TokenFactory: send 2 INJ (1 INJ platform fee + 1 INJ bank module)"
         );
 
-        // Collect 1 wINJ fee (user must approve this contract first)
-        require(
-            IERC20(WINJ).transferFrom(msg.sender, address(this), CREATION_FEE),
-            "TokenFactory: wINJ transfer failed (approve first)"
-        );
-
-        // Deploy new token with forwarded value for bank module registration
-        MintableToken newToken = new MintableToken{value: msg.value}(
+        // Deploy new token with bank module fee forwarded
+        MintableToken newToken = new MintableToken{value: BANK_MODULE_FEE}(
             name,
             symbol,
             decimals,
@@ -85,35 +78,31 @@ contract TokenFactory {
     }
 
     /**
-     * @dev Withdraws all accumulated wINJ fees to the factory owner.
+     * @dev Withdraws all accumulated INJ platform fees to the factory owner.
      */
     function withdrawFees() external onlyOwner {
-        uint256 balance = IERC20(WINJ).balanceOf(address(this));
+        uint256 balance = address(this).balance;
         require(balance > 0, "TokenFactory: no fees to withdraw");
 
-        require(
-            IERC20(WINJ).transfer(owner, balance),
-            "TokenFactory: withdrawal failed"
-        );
+        (bool success, ) = payable(owner).call{value: balance}("");
+        require(success, "TokenFactory: withdrawal failed");
 
         emit FeesWithdrawn(owner, balance);
     }
 
     /**
-     * @dev Withdraws wINJ fees to a specific address.
+     * @dev Withdraws INJ platform fees to a specific address.
      */
     function withdrawFeesTo(address to) external onlyOwner {
         require(
             to != address(0),
             "TokenFactory: cannot withdraw to zero address"
         );
-        uint256 balance = IERC20(WINJ).balanceOf(address(this));
+        uint256 balance = address(this).balance;
         require(balance > 0, "TokenFactory: no fees to withdraw");
 
-        require(
-            IERC20(WINJ).transfer(to, balance),
-            "TokenFactory: withdrawal failed"
-        );
+        (bool success, ) = payable(to).call{value: balance}("");
+        require(success, "TokenFactory: withdrawal failed");
 
         emit FeesWithdrawn(to, balance);
     }
@@ -130,10 +119,10 @@ contract TokenFactory {
     }
 
     /**
-     * @dev Returns the contract's current wINJ balance (accumulated fees).
+     * @dev Returns the contract's current INJ balance (accumulated platform fees).
      */
     function getAccumulatedFees() external view returns (uint256) {
-        return IERC20(WINJ).balanceOf(address(this));
+        return address(this).balance;
     }
 
     // Allow contract to receive native INJ for bank module
