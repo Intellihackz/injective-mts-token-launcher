@@ -23,6 +23,24 @@ Our Token Launcher uses three main smart contracts:
 
 Let's explore each one in detail.
 
+### Getting the Bank Module Contracts
+
+Before we start, you'll need to obtain the Bank module integration contracts from Injective Labs:
+
+**Required Contracts:**
+- `Bank.sol` - Interface for Injective's bank precompile
+- `BankERC20.sol` - Base contract that integrates ERC20 with the bank module
+
+**Where to get them:**
+
+1. Visit the [Injective Solidity Contracts repository](https://github.com/InjectiveLabs/solidity-contracts/tree/master/src)
+2. Download `Bank.sol` and `BankERC20.sol` from the src folder
+3. Copy both contracts to your `mts-token/contracts/` folder
+
+These contracts are essential as they provide the integration layer between standard ERC20 tokens and Injective's native bank module.
+
+> **Note**: These are precompile contracts specific to Injective EVM that enable tokens to work seamlessly across the entire Injective ecosystem (EVM, Cosmos SDK, IBC).
+
 ---
 
 ## TokenFactory Contract
