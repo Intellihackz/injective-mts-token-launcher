@@ -18,46 +18,46 @@ A decentralized token creation platform built on the Injective EVM testnet, allo
 
 ## 🌟 Overview
 
-inject.fun is a comprehensive token factory application that demonstrates seamless token creation on the Injective EVM. Users can create custom ERC20 tokens, manage token ownership, and utilize wrapped INJ tokens for ecosystem integration. The application also includes functionality for wrapping/unwrapping INJ tokens and adding newly created tokens to MetaMask.
+inject.fun is a token factory application that demonstrates seamless token creation on the Injective EVM. Users can create custom ERC20 tokens with configurable parameters and automatically add them to MetaMask with just a few clicks.
+
+📖 **Want to build this yourself?** Check out our [step-by-step tutorial](TUTORIAL.md) to learn how to create this application from scratch!
 
 ## ✨ Features
 
 ### Core Functionality
 
-- 🪙 **Custom Token Creation**: Deploy ERC20 tokens with configurable parameters
-- 🔄 **Wrap/Unwrap INJ**: Convert between native INJ and wINJ tokens
-- 🔥 **Mint & Burn**: Token owners can mint additional supply or burn tokens
-- 💼 **Ownership Management**: Transfer token ownership to other addresses
+- 🪙 **Custom Token Creation**: Deploy ERC20 tokens with custom name, ticker, supply, and decimals
+- 💳 **Simple Payment**: Pay 2 INJ to create and deploy your token
 - 🔐 **MetaMask Integration**: Seamless wallet connection and transaction signing
+- ➕ **One-Click Token Import**: Automatically add your created token to MetaMask
 
 ### User Experience
 
-- 🎨 Modern black & white theme with intuitive UI
-- ⚡ Real-time INJ and wINJ balance updates
-- 📱 Responsive design for desktop and mobile
-- 🔔 Transaction status notifications with explorer links
-- 🪙 One-click token addition to MetaMask
+- 🎨 Clean, minimalist black & white theme
+- ⚡ Real-time INJ balance display
+- 📱 Simple, intuitive token creation form
+- 🔔 Live transaction status updates
+- ✅ Success modal with token details and MetaMask import
 
 ## 🏗️ Architecture
 
 The project consists of three main components:
 
-1. **Smart Contracts**: TokenFactory, MintableToken, and Bank module integration
-2. **Frontend** (React + TypeScript): User interface for token creation and management
-3. **Deployment Scripts**: Hardhat scripts for deploying and testing contracts
+1. **Smart Contracts**: TokenFactory contract for deploying new ERC20 tokens
+2. **Frontend** (React + TypeScript): User interface for token creation
+3. **Deployment Scripts**: Hardhat scripts for deploying contracts
 
 ### How It Works
 
 ```text
-User Wallet → Wrap INJ → Approve Fees → Create Token → Register with Bank → Add to MetaMask
+User Wallet → Connect MetaMask → Create Token (2 INJ) → Add to MetaMask
 ```
 
 1. User connects MetaMask wallet to Injective EVM testnet
-2. User wraps INJ to get wINJ for the creation fee
-3. User approves 1 wINJ + 1 INJ for token creation
-4. TokenFactory deploys a new MintableToken contract
-5. Token is automatically registered with Injective's bank module
-6. User can add the new token to MetaMask and manage it
+2. User fills in token parameters (name, ticker, supply, decimals)
+3. User pays 2 INJ creation fee and confirms transaction
+4. TokenFactory deploys a new ERC20 token contract
+5. Success modal displays token details with copy and MetaMask import options
 
 ## 🛠️ Tech Stack
 
@@ -92,7 +92,7 @@ Before you begin, ensure you have the following installed:
 You'll also need:
 
 - Test INJ tokens from the [Injective Testnet Faucet](https://testnet.faucet.injective.network/)
-- At least 2 INJ (1 wINJ + 1 INJ) for token creation fees
+- At least 2 INJ for token creation
 
 ## 🚀 Installation
 
@@ -163,41 +163,17 @@ The application will be available at `http://localhost:5173`
 
 ### Create a Token
 
-**Step 1: Get wINJ**
-
-1. Navigate to the Wrap/Unwrap section
-2. Enter amount of INJ to wrap (minimum 1 INJ)
-3. Click "Wrap" and confirm transaction
-
-**Step 2: Create Your Token**
-
 1. Fill in token details:
-   - **Name**: Full token name (e.g., "My Awesome Token")
-   - **Ticker**: Token symbol (e.g., "MAT")
-   - **Supply**: Initial token supply (e.g., 1000000)
-   - **Decimal**: Token decimals (typically 18)
+   - **name**: Full token name (e.g., "My Awesome Token")
+   - **ticker**: Token symbol (e.g., "MAT")
+   - **supply**: Initial token supply (e.g., 1000000)
+   - **decimal**: Token decimals (typically 18)
 2. Click "create token"
-3. Approve wINJ spending in MetaMask
-4. Confirm token creation transaction (1 wINJ + 1 INJ)
-5. Wait for confirmation
-
-**Step 3: Add Token to MetaMask**
-
-1. A modal will appear with your new token address
-2. Click to automatically add the token to MetaMask
-3. Your tokens will now be visible in your wallet
-
-### Wrap/Unwrap INJ
-
-**Wrap:**
-- Enter amount of INJ to wrap
-- Click "Wrap" and confirm transaction
-- Receive wINJ in your wallet
-
-**Unwrap:**
-- Enter amount of wINJ to unwrap
-- Click "Unwrap" and confirm transaction
-- Receive INJ in your wallet
+3. Confirm the transaction in MetaMask (2 INJ payment)
+4. Wait for confirmation
+5. Success modal appears with token details
+6. Click "Add to MetaMask" to import your new token
+7. Click "Copy Address" to copy the token contract address
 
 ## 📂 Project Structure
 
@@ -225,11 +201,11 @@ injective-tutorials/
 
 ## 🔍 Key Files
 
-- **`mts-token/contracts/TokenFactory.sol`**: The factory contract that deploys new tokens
-- **`mts-token/contracts/MintableToken.sol`**: The ERC20 token template with mint/burn
-- **`mts-frontend/src/App.tsx`**: React application with token creation interface
-- **`mts-token/script/deploy.js`**: Contract deployment script
-- **`mts-token/hardhat.config.js`**: Network and compiler configuration
+- [mts-token/contracts/TokenFactory.sol](mts-token/contracts/TokenFactory.sol): The factory contract that deploys new tokens
+- [mts-token/contracts/MintableToken.sol](mts-token/contracts/MintableToken.sol): The ERC20 token template
+- [mts-frontend/src/App.tsx](mts-frontend/src/App.tsx): React application with token creation interface
+- [mts-token/script/deploy.js](mts-token/script/deploy.js): Contract deployment script
+- [mts-token/hardhat.config.js](mts-token/hardhat.config.js): Network and compiler configuration
 
 ## 🧪 Testing
 
@@ -245,9 +221,10 @@ npx hardhat test
 ### Injective EVM Testnet
 
 - **Chain ID**: 1439 (0x59f)
-- **RPC URL**: https://k8s.testnet.json-rpc.injective.network/
-- **Block Explorer**: https://testnet.blockscout.injective.network/blocks
-- **Faucet**: https://testnet.faucet.injective.network/
+- **RPC URL**: <https://k8s.testnet.json-rpc.injective.network/>
+- **Block Explorer**: <https://testnet.blockscout.injective.network/blocks>
+- **Faucet**: <https://testnet.faucet.injective.network/>
 
+📖 **Want to build this yourself?** Check out our [step-by-step tutorial](TUTORIAL.md) to learn how to create this application from scratch!
 
 **Built with ❤️ for the Injective ecosystem**

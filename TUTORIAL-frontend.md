@@ -6,7 +6,6 @@ Welcome to the frontend development section! Your environment is already set up 
 
 * [Building the Base UI](#building-the-base-ui)
 * [Connecting to MetaMask](#connecting-to-metamask)
-* [Implementing Wrap/Unwrap Functionality](#implementing-wrapunwrap-functionality)
 * [Creating Tokens](#creating-tokens)
 * [Adding Tokens to MetaMask](#adding-tokens-to-metamask)
 
@@ -69,7 +68,6 @@ function App() {
   const [isWalletConnected, setIsWalletConnected] = useState(false)
   const [walletAddress, setWalletAddress] = useState('')
   const [walletBalance, setWalletBalance] = useState('0.0000')
-  const [winjBalance, setWinjBalance] = useState('0.0000')
   const [isConnecting, setIsConnecting] = useState(false)
 
   // Token creation state
@@ -92,15 +90,6 @@ function App() {
     decimals: number
     supply: string
   } | null>(null)
-
-  // Wrap/Unwrap state
-  const [activeTab, setActiveTab] = useState<'wrap' | 'unwrap'>('wrap')
-  const [amount, setAmount] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [status, setStatus] = useState<{ type: 'success' | 'error' | 'pending' | ''; message: string }>({ 
-    type: '', 
-    message: '' 
-  })
 ```
 
 ### Helper Functions
@@ -129,7 +118,6 @@ For now, let's create placeholder functions that just log to the console:
       setIsWalletConnected(false)
       setWalletAddress('')
       setWalletBalance('0.0000')
-      setWinjBalance('0.0000')
       console.log('Wallet disconnected')
     } else {
       // Mock wallet connection
@@ -137,18 +125,12 @@ For now, let's create placeholder functions that just log to the console:
       setIsWalletConnected(true)
       setWalletAddress('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb')
       setWalletBalance('5.2500')
-      setWinjBalance('2.1000')
     }
   }
 
   const handleCreateToken = async () => {
     console.log('Create token:', { tokenName, ticker, supply, decimal })
     setTokenStatus({ type: 'success', message: 'Token creation will be implemented next!' })
-  }
-
-  const handleWrap = async () => {
-    console.log(`${activeTab}:`, amount)
-    setStatus({ type: 'success', message: 'Wrap/unwrap will be implemented next!' })
   }
 
   const closeModal = () => {
@@ -182,7 +164,7 @@ Now let's create the complete JSX for our app:
           {isConnecting
             ? 'Connecting...'
             : (isWalletConnected
-              ? `${walletBalance} INJ | ${winjBalance} wINJ | ${shortenAddress(walletAddress)}`
+              ? `${walletBalance} INJ | ${walletAddress}`
               : 'Connect Wallet')}
         </span>
       </header>
@@ -234,7 +216,7 @@ Now let's create the complete JSX for our app:
             {isCreatingToken ? 'Creating...' : 'create token'}
           </button>
           <div className="fee-notice">
-            <span className="fee-text">payment of 1 INJ and 1 wINJ is required for token creation</span>
+            <span className="fee-text">payment of 2 INJ is required for token creation</span>
           </div>
 
           {tokenStatus.message && (
@@ -243,47 +225,6 @@ Now let's create the complete JSX for our app:
             </div>
           )}
         </section>
-
-        {/* Wrap/Unwrap Card */}
-        <aside className="wrap-card">
-          <div className="tab-container">
-            <button
-              className={`tab ${activeTab === 'wrap' ? 'active' : ''}`}
-              onClick={() => setActiveTab('wrap')}
-            >
-              wrap
-            </button>
-            <button
-              className={`tab ${activeTab === 'unwrap' ? 'active' : ''}`}
-              onClick={() => setActiveTab('unwrap')}
-            >
-              unwrap
-            </button>
-          </div>
-
-          <div className="amount-group">
-            <label className="amount-label">amount</label>
-            <div className="amount-input-wrapper">
-              <input
-                type="text"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder=""
-              />
-              <span className="amount-suffix">{activeTab === 'wrap' ? 'INJ' : 'wINJ'}</span>
-            </div>
-          </div>
-
-          <button className="transfer-btn" onClick={handleWrap} disabled={isLoading}>
-            {isLoading ? 'Processing...' : activeTab}
-          </button>
-
-          {status.message && (
-            <div className={`status-message ${status.type}`}>
-              {status.message}
-            </div>
-          )}
-        </aside>
       </main>
 
       {/* Token Created Modal */}
@@ -353,20 +294,14 @@ Let's break down what we've built:
 **Header Section**
 - App logo and branding
 - Wallet connection button
-- Shows balances when connected (mock data for now)
+- Shows INJ balance when connected (mock data for now)
 
 **Token Creation Form**
 - Name input
 - Ticker/symbol input
 - Supply and decimals (in a row)
 - Create button
-- Fee notice
-- Status message area
-
-**Wrap/Unwrap Card**
-- Tab switcher (wrap/unwrap)
-- Amount input with currency suffix
-- Action button
+- Fee notice (2 INJ)
 - Status message area
 
 **Token Modal**
@@ -398,7 +333,6 @@ You should see:
 
 ✅ A working UI with all components visible  
 ✅ Clickable connect/disconnect (with mock data)  
-✅ Tab switching between wrap/unwrap  
 ✅ Form inputs that update state  
 ✅ Buttons that log to console  
 
@@ -440,28 +374,16 @@ This tells MetaMask how to connect to Injective EVM.
 
 ### Contract Addresses
 
-Add these constants above your component:
+Add this constant above your component:
 
 ```typescript
-// wINJ Contract Address on Injective Testnet
-const WINJ_CONTRACT_ADDRESS = '0x0000000088827d2d103ee2d9A6b781773AE03FfB'
-
-// Token Factory Contract Address
-const TOKEN_FACTORY_ADDRESS = '0x5c68BDa376ed8eBcc96a5FA9D721772c16dF5f06'
+// Token Factory Contract Address (use your deployed address)
+const TOKEN_FACTORY_ADDRESS = '0x715513b13Aa8118827167Dc5B51E3d6DE492417E'
 ```
 
 ### Getting Contract ABIs
 
-Before we implement the connection, we need the contract ABIs.
-
-**Create `src/abis/WINJ.json`:**
-
-The wINJ contract is a standard WETH-like contract. You'll need the ABI with these functions:
-- `deposit()` - Wrap INJ to wINJ
-- `withdraw(uint256)` - Unwrap wINJ to INJ
-- `approve(address, uint256)` - Approve spending
-- `balanceOf(address)` - Check balance
-- `allowance(address, address)` - Check allowance
+Before we implement the connection, we need the contract ABI.
 
 **Create `src/abis/TOKENFACTORY.json`:**
 
@@ -471,12 +393,11 @@ cd mts-token/artifacts/contracts/TokenFactory.sol/
 # Copy the "abi" array from TokenFactory.json
 ```
 
-### Importing ABIs
+### Importing ABI
 
 Add to your imports:
 
 ```typescript
-import WINJ_ABI from './abis/WINJ.json'
 import TOKEN_FACTORY_ABI from './abis/TOKENFACTORY.json'
 ```
 
@@ -494,7 +415,6 @@ const handleWalletClick = async () => {
     setIsWalletConnected(false)
     setWalletAddress('')
     setWalletBalance('0.0000')
-    setWinjBalance('0.0000')
     console.log('Wallet disconnected')
   } else {
     // Connect wallet using MetaMask with ethers v6
@@ -521,39 +441,6 @@ const handleWalletClick = async () => {
       // Fetch native INJ balance
       const balance = await provider.getBalance(address)
       const formattedBalance = formatEther(balance)
-
-      // Create wINJ contract instance
-      const winjContract = new Contract(WINJ_CONTRACT_ADDRESS, WINJ_ABI, signer)
-
-      // Check and request approval if needed
-      try {
-        const currentAllowance = await winjContract.allowance(address, TOKEN_FACTORY_ADDRESS)
-        console.log('Current wINJ allowance:', formatEther(currentAllowance))
-
-        // Only request approval if allowance is less than threshold
-        if (currentAllowance < BigInt('1000000000000000000000000000000')) {
-          console.log('Requesting wINJ approval...')
-          const approveTx = await winjContract.approve(TOKEN_FACTORY_ADDRESS, MaxUint256)
-          console.log('Approval tx sent:', approveTx.hash)
-          await approveTx.wait()
-          console.log('wINJ approval confirmed!')
-        } else {
-          console.log('wINJ already approved, skipping approval request')
-        }
-      } catch (approveErr) {
-        console.error('wINJ approval check/request failed:', approveErr)
-      }
-
-      // Query wINJ balance
-      try {
-        const winjBalanceRaw = await winjContract.balanceOf(address)
-        const formattedWinjBalance = formatEther(winjBalanceRaw)
-        setWinjBalance(formatBalance(formattedWinjBalance))
-        console.log('wINJ Balance:', formattedWinjBalance)
-      } catch (balanceErr) {
-        console.error('Failed to fetch wINJ balance:', balanceErr)
-        setWinjBalance('0.0000')
-      }
 
       setWalletAddress(shortenAddress(address))
       setWalletBalance(formatBalance(formattedBalance))
@@ -604,22 +491,6 @@ const balance = await provider.getBalance(address)
 const formattedBalance = formatEther(balance)
 ```
 
-**5. Auto-Approve wINJ**
-```typescript
-if (currentAllowance < BigInt('1000000000000000000000000000000')) {
-  const approveTx = await winjContract.approve(TOKEN_FACTORY_ADDRESS, MaxUint256)
-  await approveTx.wait()
-}
-```
-This is the magic! On first connection, we automatically approve the TokenFactory to spend wINJ. Users won't need to approve again later.
-
-**6. Get wINJ Balance**
-```typescript
-const winjBalanceRaw = await winjContract.balanceOf(address)
-const formattedWinjBalance = formatEther(winjBalanceRaw)
-setWinjBalance(formatBalance(formattedWinjBalance))
-```
-
 ### Testing the Connection
 
 Save and test:
@@ -628,117 +499,9 @@ Save and test:
 2. MetaMask should pop up
 3. If not on Injective EVM, it asks to add/switch
 4. Approve connection
-5. Approve wINJ spending (first time only)
-6. See real balances in header
+5. See real INJ balance in header
 
-You now have a real wallet connection with automatic token approval!
-
----
-
-## Implementing Wrap/Unwrap Functionality
-
-Now let's make the wrap/unwrap feature actually work with the blockchain.
-
-### Adding More Ethers Imports
-
-Update your ethers import to include `parseEther`:
-
-```typescript
-import { BrowserProvider, formatEther, parseEther, MaxUint256, Contract } from 'ethers'
-```
-
-### Implementing the Wrap/Unwrap Handler
-
-Replace the mock `handleWrap` function with this real implementation:
-
-<details>
-<summary>Click to view complete handleWrap function</summary>
-
-```typescript
-const handleWrap = async () => {
-  if (!isWalletConnected) {
-    setStatus({ type: 'error', message: 'Please connect your wallet first!' })
-    return
-  }
-
-  if (!amount || parseFloat(amount) <= 0) {
-    setStatus({ type: 'error', message: 'Please enter a valid amount!' })
-    return
-  }
-
-  try {
-    setIsLoading(true)
-    setStatus({ type: 'pending', message: `${activeTab === 'wrap' ? 'Wrapping' : 'Unwrapping'}...` })
-
-    const provider = new BrowserProvider(window.ethereum)
-    const signer = await provider.getSigner()
-    const address = await signer.getAddress()
-    const winjContract = new Contract(WINJ_CONTRACT_ADDRESS, WINJ_ABI, signer)
-
-    if (activeTab === 'wrap') {
-      // Wrap INJ to wINJ - call deposit() with INJ value
-      const tx = await winjContract.deposit({
-        value: parseEther(amount)
-      })
-      setStatus({ type: 'pending', message: 'Transaction sent, waiting for confirmation...' })
-      await tx.wait()
-      setStatus({ type: 'success', message: `Successfully wrapped ${amount} INJ to wINJ!` })
-    } else {
-      // Unwrap wINJ to INJ - call withdraw() with amount
-      const tx = await winjContract.withdraw(parseEther(amount))
-      setStatus({ type: 'pending', message: 'Transaction sent, waiting for confirmation...' })
-      await tx.wait()
-      setStatus({ type: 'success', message: `Successfully unwrapped ${amount} wINJ to INJ!` })
-    }
-
-    // Refresh balances after transaction
-    const newBalance = await provider.getBalance(address)
-    const newWinjBalance = await winjContract.balanceOf(address)
-    setWalletBalance(formatBalance(formatEther(newBalance)))
-    setWinjBalance(formatBalance(formatEther(newWinjBalance)))
-    setAmount('') // Clear the input
-
-  } catch (err: any) {
-    console.error('Transaction failed:', err.message || err)
-    setStatus({ type: 'error', message: `Transaction failed: ${err.message || 'Unknown error'}` })
-  } finally {
-    setIsLoading(false)
-  }
-}
-```
-
-</details>
-
-### Understanding Wrap vs Unwrap
-
-**Wrapping (INJ → wINJ)**
-```typescript
-const tx = await winjContract.deposit({
-  value: parseEther(amount)
-})
-```
-Sends native INJ to the wINJ contract's `deposit()` function. The contract mints equivalent wINJ to your address.
-
-**Unwrapping (wINJ → INJ)**
-```typescript
-const tx = await winjContract.withdraw(parseEther(amount))
-```
-Burns your wINJ tokens and sends native INJ back to your address.
-
-### Testing Wrap/Unwrap
-
-1. Connect wallet
-2. Enter amount (e.g., "0.1")
-3. Click "wrap"
-4. Approve in MetaMask
-5. Wait for confirmation
-6. See balances update
-7. Try unwrapping
-
-You should see:
-- Transaction status updates
-- Balance refreshes automatically
-- Input clears after success
+You now have a real wallet connection!
 
 ---
 
@@ -790,28 +553,24 @@ const handleCreateToken = async () => {
     const signer = await provider.getSigner()
     const tokenFactory = new Contract(TOKEN_FACTORY_ADDRESS, TOKEN_FACTORY_ABI, signer)
 
-    // Get creation fees
-    // CREATION_FEE (1 wINJ) - pulled via transferFrom (requires prior approval)
-    // BANK_MODULE_FEE (1 INJ) - sent as msg.value for bank module registration
-    const creationFee = await tokenFactory.CREATION_FEE()
-    const bankModuleFee = await tokenFactory.BANK_MODULE_FEE()
-    console.log('Creation fee (wINJ):', formatEther(creationFee), 'Bank module fee (native INJ):', formatEther(bankModuleFee))
+    // Get total creation fee (2 INJ total: 1 INJ platform fee + 1 INJ bank module fee)
+    const totalFee = await tokenFactory.TOTAL_FEE()
+    console.log('Total creation fee (INJ):', formatEther(totalFee))
 
-    setTokenStatus({ type: 'pending', message: `Creating token (${formatEther(creationFee)} wINJ + ${formatEther(bankModuleFee)} INJ)...` })
+    setTokenStatus({ type: 'pending', message: `Creating token (${formatEther(totalFee)} INJ)...` })
 
     // Calculate initial supply with token decimals
     const initialSupply = BigInt(supply) * BigInt(10 ** decimalsNum)
     console.log('Initial supply (with decimals):', initialSupply.toString())
 
-    // Create token - only send BANK_MODULE_FEE as native value
-    // The contract will pull CREATION_FEE in wINJ via transferFrom
-    console.log('Calling createToken with:', { tokenName, ticker, decimalsNum, initialSupply: initialSupply.toString(), nativeValue: bankModuleFee.toString() })
+    // Create token - send 2 INJ as msg.value
+    console.log('Calling createToken with:', { tokenName, ticker, decimalsNum, initialSupply: initialSupply.toString(), nativeValue: totalFee.toString() })
     const tx = await tokenFactory.createToken(
       tokenName,
       ticker,
       decimalsNum,
       initialSupply,
-      { value: bankModuleFee }
+      { value: totalFee }
     )
 
     setTokenStatus({ type: 'pending', message: 'Transaction sent, waiting for confirmation...' })
@@ -854,13 +613,11 @@ const handleCreateToken = async () => {
 ### Understanding the Fee Structure
 
 ```typescript
-const creationFee = await tokenFactory.CREATION_FEE() // 1 wINJ
-const bankModuleFee = await tokenFactory.BANK_MODULE_FEE() // 1 INJ
+const totalFee = await tokenFactory.TOTAL_FEE() // 2 INJ total
 ```
 
-Two fees are required:
-1. **1 wINJ** - Factory fee (automatically pulled because we approved on connection)
-2. **1 INJ** - Bank module registration fee (sent as `msg.value`)
+One simple fee:
+- **2 INJ** - Total fee (1 INJ platform fee + 1 INJ bank module registration)
 
 ### Understanding the Supply Calculation
 
@@ -874,14 +631,14 @@ If user enters supply of `1000000` with `18` decimals:
 
 ### Testing Token Creation
 
-1. Connect wallet (approval happens automatically)
+1. Connect wallet
 2. Fill in token details:
    - Name: "My Test Token"
    - Ticker: "MTT"
    - Supply: 1000000
    - Decimal: 18
 3. Click "create token"
-4. Approve transaction (1 INJ + 1 wINJ)
+4. Approve transaction (2 INJ)
 5. Wait for confirmation
 6. Modal appears with token details!
 
@@ -950,8 +707,6 @@ You've built a complete Token Launcher DApp on Injective EVM!
 
 ✅ Modern React + TypeScript interface  
 ✅ MetaMask integration with auto-network switching  
-✅ Automatic wINJ approval on connection  
-✅ Wrap/unwrap functionality (INJ ↔ wINJ)  
 ✅ Token creation with bank module integration  
 ✅ One-click MetaMask token addition  
 ✅ Real-time balance updates  
@@ -961,11 +716,10 @@ You've built a complete Token Launcher DApp on Injective EVM!
 
 Run through the full flow:
 
-1. **Connect** → Auto-switches network, approves wINJ
-2. **Wrap** → Get wINJ from INJ
-3. **Create Token** → Deploy your ERC20 (costs 1 INJ + 1 wINJ)
-4. **Add to MetaMask** → Track your new token
-5. **See Balances** → All tokens visible in MetaMask
+1. **Connect** → Auto-switches network
+2. **Create Token** → Deploy your ERC20 (costs 2 INJ)
+3. **Add to MetaMask** → Track your new token
+4. **See Balances** → All tokens visible in MetaMask
 
 ### Production Deployment
 

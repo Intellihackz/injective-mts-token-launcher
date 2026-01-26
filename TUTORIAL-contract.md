@@ -18,7 +18,7 @@ Welcome to the smart contract development section! Your environment is already s
 Our Token Launcher uses three main smart contracts:
 
 1. **TokenFactory** - The main contract that creates new tokens
-2. **MintableToken** - The ERC20 token template with mint/burn capabilities
+2. **MintableToken** - The ERC20 token template
 3. **BankERC20** - Integrates tokens with Injective's bank module
 
 Let's explore each one in detail.
@@ -39,20 +39,19 @@ The TokenFactory is the heart of our token launcher. It handles token creation, 
 pragma solidity ^0.8.20;
 
 import {MintableToken} from "./MintableToken.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title TokenFactory
  * @dev Factory contract for creating ERC20 tokens on Injective.
- * Charges 1 wINJ fee per token creation. Owner can withdraw fees.
+ * Charges 2 INJ total fee per token creation (1 INJ platform fee + 1 INJ for bank module).
+ * Owner can withdraw accumulated platform fees.
  */
 contract TokenFactory {
     address public owner;
 
-    // Hardcoded wINJ contract address on Injective testnet
-    address public constant WINJ = 0x0000000088827d2d103ee2d9A6b781773AE03FfB;
-    uint256 public constant CREATION_FEE = 1 ether; // 1 wINJ (18 decimals)
+    uint256 public constant PLATFORM_FEE = 1 ether; // 1 INJ platform fee
     uint256 public constant BANK_MODULE_FEE = 1 ether; // 1 INJ for bank module
+    uint256 public constant TOTAL_FEE = PLATFORM_FEE + BANK_MODULE_FEE; // 2 INJ total
 
     event TokenCreated(
         address indexed tokenAddress,
@@ -74,7 +73,7 @@ contract TokenFactory {
     }
 
     /**
-     * @dev Creates a new token. Requires 1 wINJ fee + 1 INJ for bank module.
+     * @dev Creates a new token. Requires 2 INJ total (1 INJ platform fee + 1 INJ for bank module).
      * @param name Token name
      * @param symbol Token symbol
      * @param decimals Token decimals (typically 18)
@@ -87,20 +86,14 @@ contract TokenFactory {
         uint8 decimals,
         uint256 initialSupply
     ) external payable returns (address tokenAddress) {
-        // Require exactly 1 INJ for bank module registration
+        // Require exactly 2 INJ (1 INJ platform fee + 1 INJ for bank module)
         require(
-            msg.value >= BANK_MODULE_FEE,
-            "TokenFactory: send 1 INJ for bank module"
+            msg.value >= TOTAL_FEE,
+            "TokenFactory: send 2 INJ (1 INJ platform fee + 1 INJ bank module)"
         );
 
-        // Collect 1 wINJ fee (user must approve this contract first)
-        require(
-            IERC20(WINJ).transferFrom(msg.sender, address(this), CREATION_FEE),
-            "TokenFactory: wINJ transfer failed (approve first)"
-        );
-
-        // Deploy new token with forwarded value for bank module registration
-        MintableToken newToken = new MintableToken{value: msg.value}(
+        // Deploy new token with bank module fee forwarded
+        MintableToken newToken = new MintableToken{value: BANK_MODULE_FEE}(
             name,
             symbol,
             decimals,
@@ -122,28 +115,26 @@ contract TokenFactory {
     }
 
     /**
-     * @dev Withdraws all accumulated wINJ fees to the factory owner.
+     * @dev Withdraws all accumulated INJ platform fees to the factory owner.
      */
     function withdrawFees() external onlyOwner {
-        uint256 balance = IERC20(WINJ).balanceOf(address(this));
+        uint256 balance = address(this).balance;
         require(balance > 0, "TokenFactory: no fees to withdraw");
 
-        require(
-            IERC20(WINJ).transfer(owner, balance),
-            "TokenFactory: withdrawal failed"
-        );
+        (bool success, ) = payable(owner).call{value: balance}("");
+        require(success, "TokenFactory: withdrawal failed");
 
         emit FeesWithdrawn(owner, balance);
     }
 
     /**
-     * @dev Returns the contract's current wINJ balance (accumulated fees).
+     * @dev Returns the contract's current INJ balance (accumulated platform fees).
      */
     function getAccumulatedFees() external view returns (uint256) {
-        return IERC20(WINJ).balanceOf(address(this));
+        return address(this).balance;
     }
 
-    // Allow contract to receive native INJ for bank module
+    // Allow contract to receive native INJ
     receive() external payable {}
 }
 ```
@@ -155,14 +146,14 @@ contract TokenFactory {
 #### Fee Structure
 
 ```solidity
-address public constant WINJ = 0x0000000088827d2d103ee2d9A6b781773AE03FfB;
-uint256 public constant CREATION_FEE = 1 ether; // 1 wINJ (18 decimals)
+uint256 public constant PLATFORM_FEE = 1 ether; // 1 INJ platform fee
 uint256 public constant BANK_MODULE_FEE = 1 ether; // 1 INJ for bank module
+uint256 public constant TOTAL_FEE = PLATFORM_FEE + BANK_MODULE_FEE; // 2 INJ total
 ```
 
-* **WINJ**: The wINJ token contract address on Injective testnet
-* **CREATION_FEE**: 1 wINJ collected by the factory (pulled via `transferFrom`)
-* **BANK_MODULE_FEE**: 1 INJ sent as native value for bank module registration
+* **PLATFORM_FEE**: 1 INJ kept by the factory (can be withdrawn by owner)
+* **BANK_MODULE_FEE**: 1 INJ forwarded for bank module registration
+* **TOTAL_FEE**: 2 INJ total that users must send
 
 #### Token Creation Function
 
@@ -180,24 +171,15 @@ This is the main function users call to create their tokens. Here's how it works
 1. **Validates Native INJ Payment**:
    ```solidity
    require(
-       msg.value >= BANK_MODULE_FEE,
-       "TokenFactory: send 1 INJ for bank module"
+       msg.value >= TOTAL_FEE,
+       "TokenFactory: send 2 INJ (1 INJ platform fee + 1 INJ bank module)"
    );
    ```
-   The user must send at least 1 INJ as native value.
+   The user must send at least 2 INJ as native value.
 
-2. **Collects wINJ Fee**:
+2. **Deploys New Token**:
    ```solidity
-   require(
-       IERC20(WINJ).transferFrom(msg.sender, address(this), CREATION_FEE),
-       "TokenFactory: wINJ transfer failed (approve first)"
-   );
-   ```
-   The factory pulls 1 wINJ from the user (requires prior approval).
-
-3. **Deploys New Token**:
-   ```solidity
-   MintableToken newToken = new MintableToken{value: msg.value}(
+   MintableToken newToken = new MintableToken{value: BANK_MODULE_FEE}(
        name,
        symbol,
        decimals,
@@ -205,9 +187,9 @@ This is the main function users call to create their tokens. Here's how it works
        msg.sender
    );
    ```
-   Creates a new MintableToken contract, forwarding the INJ for bank registration.
+   Creates a new MintableToken contract, forwarding 1 INJ for bank registration. The remaining 1 INJ stays in the factory as the platform fee.
 
-4. **Emits Event**:
+3. **Emits Event**:
    ```solidity
    emit TokenCreated(
        tokenAddress,
@@ -420,12 +402,11 @@ async function main() {
     console.log(`  Contract Address: ${factoryAddress}`);
     console.log(`  Owner (you): ${deployer.address}`);
     console.log("\\n📋 Factory Features:");
-    console.log("  - Users pay 1 wINJ fee to create tokens");
-    console.log("  - Users send 1 INJ for bank module registration");
-    console.log("  - Owner can withdraw accumulated wINJ fees");
+    console.log("  - Users pay 2 INJ total to create tokens");
+    console.log("  - 1 INJ platform fee + 1 INJ bank module registration");
+    console.log("  - Owner can withdraw accumulated platform fees");
     console.log("\\n📝 To create a token, users must:");
-    console.log("  1. Approve factory to spend 1 wINJ");
-    console.log("  2. Call createToken() with 1 INJ value");
+    console.log("  - Call createToken() with 2 INJ as msg.value");
     console.log(`\\nrun npx hardhat verify --network inj_testnet ${factoryAddress}`);
 }
 
@@ -486,13 +467,12 @@ Deploying TokenFactory...
   Owner (you): 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
 
 📋 Factory Features:
-  - Users pay 1 wINJ fee to create tokens
-  - Users send 1 INJ for bank module registration
-  - Owner can withdraw accumulated wINJ fees
+  - Users pay 2 INJ total to create tokens
+  - 1 INJ platform fee + 1 INJ bank module registration
+  - Owner can withdraw accumulated platform fees
 
 📝 To create a token, users must:
-  1. Approve factory to spend 1 wINJ
-  2. Call createToken() with 1 INJ value
+  - Call createToken() with 2 INJ as msg.value
 
 run npx hardhat verify --network inj_testnet 0x5c68BDa376ed8eBcc96a5FA9D721772c16dF5f06
 ```
@@ -554,7 +534,7 @@ Congratulations! Your TokenFactory is now live on Injective EVM testnet.
 **What's next:**
 * Build the frontend to interact with your factory
 * Allow users to create tokens through a beautiful UI
-* Add wrap/unwrap functionality for INJ/wINJ
+* Enable users to add tokens to MetaMask automatically
 
 **[Continue to Part 2: Frontend Development →](TUTORIAL-frontend.md)**
 

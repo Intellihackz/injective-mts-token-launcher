@@ -21,8 +21,7 @@ Before we dive in, let's make sure you have everything you need. Don't worry - w
 * **MetaMask wallet** - Install the browser extension if you haven't already
 * **Code editor** - VS Code is great and has excellent Solidity support
 * **Git** - For version control and cloning repositories
-* **Some testnet INJ** - We'll show you how to get this from the faucet
-* **Some testnet wINJ** - You'll need this for token creation fees
+* **Some testnet INJ** - We'll show you how to get this from the faucet (at least 2 INJ for token creation)
 
 ### Required Knowledge
 
@@ -48,17 +47,16 @@ Here's what our Token Launcher DApp will be able to do by the end of this tutori
 ### Smart Contract Features
 
 * **TokenFactory Contract** - Deploys new ERC20 tokens on demand
-* **Mintable Token Contract** - Custom ERC20 tokens with mint/burn capabilities
+* **Mintable Token Contract** - Custom ERC20 tokens
 * **Bank Module Integration** - Automatic registration with Injective's bank module
-* **wINJ Fee System** - Charges 1 wINJ + 1 INJ for token creation
+* **Simple Fee System** - Charges 2 INJ for token creation
 
 ### Frontend Features
 
-* **Modern UI Design** - Sleek black & white theme with premium aesthetics
+* **Modern UI Design** - Clean, minimalist black & white theme
 * **MetaMask Connection** - Seamless wallet integration with network switching
-* **Token Creation Interface** - Simple form to create custom ERC20 tokens
-* **Wrap/Unwrap Functionality** - Convert between INJ and wINJ tokens
-* **Real-time Balances** - Live updates of INJ and wINJ balances
+* **Token Creation Interface** - Simple form to create custom ERC20 tokens (name, ticker, supply, decimals)
+* **Real-time Balance** - Live updates of INJ balance
 * **Token Modal** - Display created token details with MetaMask integration
 * **Transaction Status** - Real-time feedback on all operations
 * **One-Click Add to MetaMask** - Automatically add newly created tokens to wallet
@@ -119,12 +117,12 @@ This happens transparently - users interact with your token like any normal ERC2
 
 ### The Registration Fee
 
-When creating a token, you pay **1 INJ** for bank module registration. This one-time fee:
+When creating a token, you pay **2 INJ** total. This one-time fee:
+- Covers token deployment gas costs
 - Registers your token's metadata (name, symbol, decimals) in the bank module
 - Enables native transfers and IBC compatibility
-- Is separate from the 1 wINJ factory fee
 
-This is why our TokenFactory requires `1 INJ (native value) + 1 wINJ (creation fee)`.
+This is why our TokenFactory requires `2 INJ` sent as the native value with the transaction.
 
 ### Key Takeaway
 
@@ -286,9 +284,7 @@ INJECTIVE_RPC=https://k8s.testnet.json-rpc.injective.network/
 Before you can deploy and test, you'll need testnet tokens:
 
 1. **Get testnet INJ**: Visit the [Injective testnet faucet](https://testnet.faucet.injective.network/)
-2. **Get testnet wINJ**: 
-   * You'll need at least 2 INJ total (1 wINJ + 1 INJ for token creation)
-   * Use the wrap functionality in the DApp after deployment
+2. **You'll need at least 2 INJ** for token creation plus additional INJ for gas fees
 
 ### Setting Up the Frontend Folder
 
