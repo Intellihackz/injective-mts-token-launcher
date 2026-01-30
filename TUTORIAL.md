@@ -60,6 +60,8 @@ Here's what our Token Launcher DApp will be able to do by the end of this tutori
 * **Token Modal** - Display created token details with MetaMask integration
 * **Transaction Status** - Real-time feedback on all operations
 * **One-Click Add to MetaMask** - Automatically add newly created tokens to wallet
+* **View on Explorer** - Open the created token's page on Blockscout explorer
+* **Contract Verification** - Verify your token contract on the explorer with one click
 
 ## Understanding Injective's Bank Precompile
 
@@ -324,6 +326,7 @@ injective-token-launcher/
 │   │   └── Bank.sol           # Bank module interface
 │   ├── script/                # Deployment scripts
 │   │   └── deploy.js          # Main deployment script
+│   ├── server.js              # Verification server
 │   ├── hardhat.config.js      # Hardhat configuration
 │   ├── .env                   # Environment variables (private keys)
 │   └── package.json
@@ -333,13 +336,9 @@ injective-token-launcher/
     │   ├── App.tsx            # Main app component
     │   ├── App.css            # Modern black & white styling
     │   └── abis/              # Contract ABIs
-    │       ├── WINJ.json      # wINJ contract ABI
     │       └── TOKENFACTORY.json  # TokenFactory ABI
     ├── public/
     └── package.json
-```
-
----
 
 ## Next Steps
 
@@ -360,6 +359,7 @@ Now you can jump straight into development without any setup interruptions!
 * Write MintableToken with mint/burn
 * Deploy to Injective EVM testnet
 * Verify your contracts
+* Create a Verification Server
 
 tutorials assume your environment is already set up, so you can focus purely on coding!
 Let's build something awesome!

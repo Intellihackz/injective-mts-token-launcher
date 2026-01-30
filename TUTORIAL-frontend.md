@@ -67,7 +67,7 @@ function App() {
   // Wallet connection state
   const [isWalletConnected, setIsWalletConnected] = useState(false)
   const [walletAddress, setWalletAddress] = useState('')
-  const [walletBalance, setWalletBalance] = useState('0.0000')
+  const [walletBalance, setWalletBalance] = useState('')
   const [isConnecting, setIsConnecting] = useState(false)
 
   // Token creation state
@@ -80,6 +80,9 @@ function App() {
     type: '', 
     message: '' 
   })
+
+  // Verification data for manual verification
+  const [verifyData, setVerifyData] = useState<{ contractAddress: string; constructorArgs: any[] } | null>(null)
 
   // Token modal state
   const [showTokenModal, setShowTokenModal] = useState(false)
@@ -577,8 +580,7 @@ const handleCreateToken = async () => {
     const receipt = await tx.wait()
 
     // Get the token address from the transaction receipt
-    // The createToken function returns the address, which is also in the TokenCreated event
-    const tokenAddress = receipt.logs[1]?.address || ''
+    const tokenAddress = receipt.logs[0]?.address || ''
     console.log('Token created! Address:', tokenAddress, 'Receipt:', receipt)
 
     // Store the created token info for the modal
@@ -590,8 +592,19 @@ const handleCreateToken = async () => {
       supply: supply
     }
     setCreatedToken(createdTokenInfo)
+    // Store verification data for manual verify button
+    setVerifyData({
+      contractAddress: tokenAddress,
+      constructorArgs: [tokenName, ticker, decimalsNum, initialSupply.toString(), await signer.getAddress()]
+    })
     setShowTokenModal(true)
     setTokenStatus({ type: 'success', message: `Token "${tokenName}" (${ticker}) created successfully!` })
+
+    // Refresh wallet balance after token creation
+    const updatedBalance = await provider.getBalance(await signer.getAddress())
+    const formattedBalance = formatEther(updatedBalance)
+    setWalletBalance(formatBalance(formattedBalance))
+    console.log('Updated INJ Balance:', formattedBalance)
 
     // Clear form
     setTokenName('')
@@ -696,6 +709,78 @@ Update the "Add to MetaMask" button in your modal to call this function:
 4. MetaMask prompts to add token
 5. Approve
 6. Token now visible in MetaMask!
+
+---
+
+## Post-Creation Actions
+
+After a token is created, two additional action buttons appear:
+
+### View on Explorer
+
+Opens the token's page on the Injective Blockscout explorer:
+
+```typescript
+const viewOnExplorer = () => {
+  if (!createdToken) return;
+  const url = `https://testnet.blockscout.injective.network/token/${createdToken.address}`;
+  window.open(url, '_blank');
+};
+```
+
+### Verify Contract
+
+ contract verification via your local verification server:
+
+```typescript
+const verifyContract = async () => {
+  if (!verifyData) return;
+  setTokenStatus({ type: 'pending', message: 'Verifying contract...' });
+  try {
+    const resp = await fetch('http://localhost:3001/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(verifyData),
+    });
+    const result = await resp.json();
+    if (result.success) {
+      setTokenStatus({ type: 'success', message: 'Contract verified!' });
+    } else {
+      setTokenStatus({ type: 'error', message: `Verification failed: ${result.error}` });
+    }
+  } catch (e) {
+    setTokenStatus({ type: 'error', message: `Verification request error: ${e}` });
+  }
+};
+```
+
+Add a state variable to store the verification data after token creation:
+
+```typescript
+const [verifyData, setVerifyData] = useState<{ contractAddress: string; constructorArgs: any[] } | null>(null);
+```
+
+After the token is created, store the verification data:
+
+```typescript
+setVerifyData({
+  contractAddress: tokenAddress,
+  constructorArgs: [tokenName, ticker, decimalsNum, initialSupply.toString(), await signer.getAddress()]
+});
+```
+
+### Adding the Buttons to the UI
+
+In your token creation card (after the status message), add the post-creation actions:
+
+```tsx
+{createdToken && (
+  <div className="post-create-actions" style={{ marginTop: '16px' }}>
+    <button className="action-btn" onClick={viewOnExplorer}>View on Explorer</button>
+    <button className="action-btn" onClick={verifyContract}>Verify Contract</button>
+  </div>
+)}
+```
 
 ---
 

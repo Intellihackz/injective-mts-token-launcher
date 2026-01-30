@@ -10,6 +10,7 @@ Welcome to the smart contract development section! Your environment is already s
 * [Bank Module Integration](#bank-module-integration)
 * [Deploying to Testnet](#deploying-to-testnet)
 * [Verifying Your Contract](#verifying-your-contract)
+* [Creating a Verification Server](#creating-a-verification-server)
 
 ---
 
@@ -540,6 +541,136 @@ You should see:
 
 ---
 
+## Creating a Verification Server
+
+The frontend needs a way to verify token contracts on Blockscout. We'll create a simple Express server that runs Hardhat's verify command.
+
+### Install Server Dependencies
+
+```bash
+npm install express cors
+```
+
+### Create server.js
+
+Create `server.js` in your `mts-token` folder:
+
+<details>
+<summary>Click to view complete server.js</summary>
+
+```javascript
+const express = require('express');
+const cors = require('cors');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+
+const execAsync = promisify(exec);
+
+const app = express();
+
+app.use(cors({
+    origin: '*'
+}));
+app.use(express.json());
+
+app.post('/verify', async (req, res) => {
+    const { contractAddress, constructorArgs } = req.body;
+
+    if (!contractAddress) {
+        return res.status(400).json({ error: 'contractAddress is required' });
+    }
+
+    console.log('Verifying contract:', contractAddress);
+    console.log('Constructor args:', constructorArgs);
+
+    try {
+        const targetNetwork = 'inj_testnet';
+
+        // Build the command: npx hardhat verify --network <network> <address> <args>
+        let command = `npx hardhat verify --network ${targetNetwork} ${contractAddress}`;
+
+        // Add constructor arguments if provided
+        if (constructorArgs && constructorArgs.length > 0) {
+            const argsString = constructorArgs.map(arg => `"${arg}"`).join(' ');
+            command += ` ${argsString} --force`;
+        }
+
+        console.log('Executing command:', command);
+
+        // Execute the verification command
+        const { stdout, stderr } = await execAsync(command, {
+            cwd: __dirname,
+            timeout: 300000, // 5 minutes timeout
+            maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+        });
+
+        console.log('stdout:', stdout);
+        if (stderr) {
+            console.log('stderr:', stderr);
+        }
+
+        res.json({
+            success: true,
+            message: 'Contract verified successfully',
+            output: stdout
+        });
+
+    } catch (error) {
+        console.error('Verification error:', error);
+
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            details: error.stderr || error.stdout
+        });
+    }
+});
+
+app.listen(3001, () => {
+    console.log('🚀 Verification server running on http://localhost:3001');
+    console.log('📝 POST /verify to verify contracts');
+});
+```
+
+</details>
+
+### Add npm Script
+
+Update your `package.json` to add a server script:
+
+```json
+{
+  "scripts": {
+    "server": "node server.js"
+  }
+}
+```
+
+### Running the Server
+
+Start the verification server:
+
+```bash
+npm run server
+```
+
+You should see:
+
+```bash
+🚀 Verification server running on http://localhost:3001
+📝 POST /verify to verify contracts
+```
+
+### How It Works
+
+1. The frontend sends a POST request to `/verify` with the contract address and constructor arguments
+2. The server runs `npx hardhat verify` with the provided arguments
+3. The result is returned to the frontend
+
+This allows users to verify their created tokens directly from the UI by clicking the "Verify Contract" button.
+
+---
+
 ## Next Steps
 
 Congratulations! Your TokenFactory is now live on Injective EVM testnet. 
@@ -547,6 +678,7 @@ Congratulations! Your TokenFactory is now live on Injective EVM testnet.
 **What you've accomplished:**
 * ✅ Deployed TokenFactory contract
 * ✅ Verified contract on BlockScout  
+* ✅ Created a verification server for token contracts
 * ✅ Ready to create tokens programmatically
 
 **What's next:**
