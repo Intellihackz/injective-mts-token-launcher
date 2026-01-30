@@ -6,7 +6,8 @@
   "main": "index.js",
   "repository": "https://github.com/injective-dev/hardhat-inj",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "node server.js"
   },
   "keywords": [
     "hardhat",
@@ -22,6 +23,8 @@
     "hardhat": "2.25.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.4.0"
+    "@openzeppelin/contracts": "^5.4.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
   }
 }

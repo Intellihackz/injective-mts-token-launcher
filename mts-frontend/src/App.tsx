@@ -36,6 +36,8 @@ function App() {
   const [isConnecting, setIsConnecting] = useState(false)
   const [isCreatingToken, setIsCreatingToken] = useState(false)
   const [tokenStatus, setTokenStatus] = useState<{ type: 'success' | 'error' | 'pending' | ''; message: string }>({ type: '', message: '' })
+  // State to store verification data for manual re‑verify
+  const [verifyData, setVerifyData] = useState<{ contractAddress: string; constructorArgs: any[] } | null>(null);
   const [showTokenModal, setShowTokenModal] = useState(false)
   const [createdToken, setCreatedToken] = useState<{ address: string; name: string; symbol: string; decimals: number; supply: string } | null>(null)
 
@@ -47,6 +49,34 @@ function App() {
     const num = parseFloat(balance)
     return num.toFixed(4)
   }
+
+  // Open Blockscout explorer for the created token
+  const viewOnExplorer = () => {
+    if (!createdToken) return;
+    const url = `https://testnet.blockscout.injective.network/token/${createdToken.address}`;
+    window.open(url, '_blank');
+  };
+
+  // Manually trigger verification again
+  const verifyContract = async () => {
+    if (!verifyData) return;
+    setTokenStatus({ type: 'pending', message: 'Verifying contract...' });
+    try {
+      const resp = await fetch('http://localhost:3001/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(verifyData),
+      });
+      const result = await resp.json();
+      if (result.success) {
+        setTokenStatus({ type: 'success', message: 'Contract verified!' });
+      } else {
+        setTokenStatus({ type: 'error', message: `Verification failed: ${result.error}` });
+      }
+    } catch (e) {
+      setTokenStatus({ type: 'error', message: `Verification request error: ${e}` });
+    }
+  };
 
   const handleWalletClick = async () => {
     if (isWalletConnected) {
@@ -152,7 +182,7 @@ function App() {
       const receipt = await tx.wait()
 
       // Get the token address from the transaction receipt
-      const tokenAddress = receipt.logs[1]?.address || ''
+      const tokenAddress = receipt.logs[0]?.address || ''
       console.log('Token created! Address:', tokenAddress, 'Receipt:', receipt)
 
       // Store the created token info for the modal
@@ -164,6 +194,11 @@ function App() {
         supply: supply
       }
       setCreatedToken(createdTokenInfo)
+      // Store verification data for manual re‑verify button
+      setVerifyData({
+        contractAddress: tokenAddress,
+        constructorArgs: [tokenName, ticker, decimalsNum, initialSupply.toString(), await signer.getAddress()]
+      });
       setShowTokenModal(true)
       setTokenStatus({ type: 'success', message: `Token "${tokenName}" (${ticker}) created successfully!` })
 
@@ -290,6 +325,12 @@ function App() {
               {tokenStatus.message}
             </div>
           )}
+          {createdToken && (
+            <div className="post-create-actions" style={{ marginTop: '16px' }}>
+              <button className="action-btn" onClick={viewOnExplorer}>View on Explorer</button>
+              <button className="action-btn" onClick={verifyContract}>Verify Contract</button>
+            </div>
+          )}
         </section>
       </main>
 
@@ -338,6 +379,8 @@ function App() {
                 >
                   Add to MetaMask
                 </button>
+                <button className="modal-btn view-btn" onClick={viewOnExplorer}>View on Explorer</button>
+                <button className="modal-btn verify-btn" onClick={verifyContract}>Verify Contract</button>
               </div>
 
               <button className="modal-close-btn" onClick={closeModal}>

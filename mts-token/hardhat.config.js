@@ -28,6 +28,13 @@ module.exports = {
       },
     ],
   },
+  verify: {
+    etherscan: {
+      apiKey: {
+        inj_testnet: 'nil',
+      },
+    },
+  },
   sourcify: {
     enabled: false,
   },
