@@ -339,6 +339,7 @@ injective-token-launcher/
     │       └── TOKENFACTORY.json  # TokenFactory ABI
     ├── public/
     └── package.json
+```
 
 ## Next Steps
 
