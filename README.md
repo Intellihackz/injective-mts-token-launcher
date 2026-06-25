@@ -20,7 +20,7 @@ A decentralized token creation platform built on the Injective EVM testnet, allo
 
 inject.fun is a token factory application that demonstrates seamless token creation on the Injective EVM. Users can create custom ERC20 tokens with configurable parameters and automatically add them to MetaMask with just a few clicks.
 
-📖 **Want to build this yourself?** Check out our [step-by-step tutorial](TUTORIAL.md) to learn how to create this application from scratch!
+📖 **Want to build this yourself?** Check out our [step-by-step tutorial](tutorial/0-setup.md) to learn how to create this application from scratch!
 
 ## ✨ Features
 
@@ -225,6 +225,6 @@ npx hardhat test
 - **Block Explorer**: <https://testnet.blockscout.injective.network/blocks>
 - **Faucet**: <https://testnet.faucet.injective.network/>
 
-📖 **Want to build this yourself?** Check out our [step-by-step tutorial](TUTORIAL.md) to learn how to create this application from scratch!
+📖 **Want to build this yourself?** Check out our [step-by-step tutorial](tutorial/0-setup.md) to learn how to create this application from scratch!
 
 **Built with ❤️ for the Injective ecosystem**

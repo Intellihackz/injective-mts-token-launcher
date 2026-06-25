@@ -354,7 +354,7 @@ Congratulations! Your development environment is now completely set up. You have
 Now you can jump straight into development without any setup interruptions!
 
 
-**[Start with Smart Contract Development →](TUTORIAL-contract.md)**
+**[Start with Smart Contract Development →](1-contract.md)**
 
 * Write the TokenFactory contract
 * Write MintableToken with mint/burn

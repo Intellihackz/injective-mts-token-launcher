@@ -686,7 +686,7 @@ Congratulations! Your TokenFactory is now live on Injective EVM testnet.
 * Allow users to create tokens through a beautiful UI
 * Enable users to add tokens to MetaMask automatically
 
-**[Continue to Part 2: Frontend Development →](TUTORIAL-frontend.md)**
+**[Continue to Part 2: Frontend Development →](2-frontend.md)**
 
 In Part 2, we'll:
 
